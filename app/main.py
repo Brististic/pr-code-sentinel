@@ -1,6 +1,13 @@
 import os
 import hmac
 import hashlib
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Explicitly find and load .env from the project root
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(dotenv_path=BASE_DIR / ".env")
+
 from fastapi import FastAPI, Request, Header, HTTPException, BackgroundTasks, status
 from pydantic_settings import BaseSettings
 
@@ -17,6 +24,10 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+if not settings.gemini_api_key:
+    raise ValueError(f"GEMINI_API_KEY could not be found in {BASE_DIR / '.env'}. Check the file name and variable name.")
+
 app = FastAPI(title="PR Code Sentinel", version="1.0.0")
 
 diff_parser = GitDiffParser()
