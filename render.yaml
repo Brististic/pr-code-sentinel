@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: pr-code-sentinel
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /openapi.json
+    autoDeploy: true
+    envVars:
+      # Set these three in the Render dashboard; sync:false keeps values out of Git.
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
