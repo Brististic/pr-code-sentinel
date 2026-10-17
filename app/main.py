@@ -1,6 +1,7 @@
 import os
 import hmac
 import hashlib
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -25,8 +26,38 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-if not settings.gemini_api_key:
-    raise ValueError(f"GEMINI_API_KEY could not be found in {BASE_DIR / '.env'}. Check the file name and variable name.")
+
+def missing_env_message(s: Settings) -> str | None:
+    """Describe required config that is absent, or None when everything is set.
+
+    Values can come from process environment variables (Render dashboard,
+    docker -e, systemd) or from a .env file at the project root in plain
+    KEY=value format.
+    """
+    if s.gemini_api_key:
+        return None
+    return (
+        "GEMINI_API_KEY is not configured. Set it as a process environment "
+        "variable (e.g. in the Render dashboard Environment tab) or in a .env "
+        "file at the project root using plain KEY=value syntax - not "
+        "PowerShell $env: syntax, and without quotes. Note that a .env uploaded "
+        "as a Render Secret File is not loaded automatically."
+    )
+
+
+_config_error = missing_env_message(settings)
+if _config_error:
+    raise ValueError(_config_error)
+
+if not settings.github_token:
+    logging.warning(
+        "GITHUB_TOKEN is empty: PR diffs cannot be fetched and reviews cannot be posted."
+    )
+if settings.github_webhook_secret == "test_secret":
+    logging.warning(
+        "GITHUB_WEBHOOK_SECRET fell back to the insecure default 'test_secret': "
+        "webhooks signed with a different secret will be rejected with 401."
+    )
 
 app = FastAPI(title="PR Code Sentinel", version="1.0.0")
 
